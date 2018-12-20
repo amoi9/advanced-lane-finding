@@ -1,6 +1,15 @@
 import numpy as np
 import cv2
 import matplotlib.image as mpimg
+                                    
+def threshed_binary_pipeline(img, s_thresh=(170, 255), sx_thresh=(20, 100)):
+    sxbinary = abs_sobel_thresh(img, 'x', sx_thresh[0], sx_thresh[1])
+    s_binary = s_channel_thresh(img, s_thresh[0], s_thresh[1])
+    
+    # Combine the two binary thresholds
+    combined_binary = np.zeros_like(sxbinary)
+    combined_binary[(s_binary == 1) | (sxbinary == 1)] = 1
+    return combined_binary
 
 # Applies Sobel x or y,then takes an absolute value and applies a threshold.
 def abs_sobel_thresh(img, orient='x', thresh_min=0, thresh_max=255):
@@ -35,12 +44,3 @@ def s_channel_thresh(img, thresh_min=0, thresh_max=255):
     s_binary = np.zeros_like(s_channel)
     s_binary[(s_channel >= thresh_min) & (s_channel <= thresh_max)] = 1
     return s_binary
-                                    
-def pipeline(img, s_thresh=(170, 255), sx_thresh=(20, 100)):
-    sxbinary = abs_sobel_thresh(img, 'x', sx_thresh[0], sx_thresh[1])
-    s_binary = s_channel_thresh(img, s_thresh[0], s_thresh[1])
-    
-    # Combine the two binary thresholds
-    combined_binary = np.zeros_like(sxbinary)
-    combined_binary[(s_binary == 1) | (sxbinary == 1)] = 1
-    return combined_binary
