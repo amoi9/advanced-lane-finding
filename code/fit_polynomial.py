@@ -15,5 +15,5 @@ def fit_polynomial(img_shape, leftx, lefty, rightx, righty):
         print('The function failed to fit a line!')
         left_fitx = 1*ploty**2 + 1*ploty
         right_fitx = 1*ploty**2 + 1*ploty
-    return left_fitx, right_fitx, ploty
+    return left_fitx, right_fitx, ploty, left_fit, right_fit
     

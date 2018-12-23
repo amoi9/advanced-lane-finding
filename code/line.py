@@ -26,7 +26,7 @@ class Line():
     
     def set_params(self, current_fit, radius_of_curvature, line_base_pos, allx, ally):
 #         self.diffs = np.substract(current_fit - self.current_fit)
-        
+        self.detected = True
         self.current_fit = current_fit
         self.radius_of_curvature = radius_of_curvature
         self.line_base_pos = line_base_pos
