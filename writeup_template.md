@@ -30,9 +30,9 @@ function and obtained this result:
 
 ![alt text][image1]
 
-### Pipeline (single images)
+## Pipeline (single images)
 
-#### 1. Provide an example of a distortion-corrected image.
+### 1. Provide an example of a distortion-corrected image.
 
 To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
 ![alt text][image2]
@@ -41,16 +41,16 @@ In the second code cell in `advanced.ipynb` I invoked the `cal_undistort` method
 distortion-corrected image:
 ![alt text][undistorted]
 
-#### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
+### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
 I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines 5 through 
 46 in `code/color_and_gradient_threshed.py`). Code to generate the output is in the 4th cell of `advanced.ipynb`. Here's an 
 example of my output for this step.
 ![alt text][image3]
 
-#### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
+### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 4 through 10 in the 
+The code for my perspective transform into birds-view includes a function called `warper()`, which appears in lines 4 through 10 in the 
 file `code/perspective_transform.py`.  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) 
 and destination (`dst`) points. 
 
@@ -83,24 +83,25 @@ and its warped counterpart to verify that the lines appear parallel in the warpe
 
 ![alt text][image4]
 
-#### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
+### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
 In the 6th and 8th code cell of the notebook for a test image (`test_images/test3.jpg`), I run the steps:
   1. Undistort the image
   2. Run color and gradients transforms to get a binary image
   3. Apply perspective transform on the binary image to get a warped output
-  4. Find lane pixels from the binary warp image (using the `find_lane_pixels` method from `code/lane_pixel_finder.py`)
+  4. Find lane pixels from the binary warp image (using the sliding window appraoch, the `find_lane_pixels` method from 
+  `code/lane_pixel_finder.py`)
   5. Fit the lane lines with a 2nd order polynomial (using the `fit_polynomial` method from `code/fit_polynomial.py`)
  
 The output is like this:
 
 ![alt text][image5]
 
-#### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
+### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
 I did this in lines 8 through 42 in `code/curvature_and_offset.py`. 
 
-#### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
+### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
 I implemented this step in the 10th code cell of `advanced.ipynb`. 
 Here is an example of my result on a test image:
@@ -109,16 +110,45 @@ Here is an example of my result on a test image:
 
 ---
 
-### Pipeline (video)
-
-#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
+## Pipeline (video)
 
 Here's a [link to my video result](./project_video_output.mp4)
 
 ---
 
-### Discussion
+## Discussion
 
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and 
+how I might improve it if I were going to pursue this project further.  
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+### 1. Approach
+
+The code is in `code/pipeline.py`. I got there by debugging with single images from the video clips and ran steps 
+mentioned previously in the doc.
+
+The `init_process` method does the same as previously decribed for a single image, it 
+is used for the first frame processsing, as well as when we fail sanity checks multiple frames in row and need to restart.
+This method finds lane pixels starting from the peak of the histogram, iterating the sliding windows, and extracting the pixels with 
+non-zero x and y values.
+
+The `search_around_previous` method takes advantage of previously calculated polynomial coefficients, and only search around
+in a margin within the previous line position. To achieve that I instantiated a `left_line` and `right_line` which are instances 
+of the `Line` class, and records the recent processed frame for the respective lanes. I only record those passed the sanity checks,
+namely lanes have similar curvature, are separated by approximately the right distance horizontally and roughly in parallel.
+
+I noticed the sanity checks improved the 28~30th second of the project vedio when a car from the right passed by.
+
+In order to know when to fall back to `init_process`, I keep track of the `current_frame` number, also record the good frame 
+numbers in the `Line` instances.
+
+### 2. Potential improvements
+
+I wanted to smooth the drawing by averaging out the recent past measurements, but either I didn't manage to find the 
+right `numpy` methods, or naive averaging doesn't work. I wasn't able to get the drawing working with averaged results.
+I could spent more time on that.
+
+My pipeline doesn't handle the first frame failure case well, which can be improved.
+
+I tried the pipeline in the `challenge_video.mp4`, it seems not working well when there are marks in between the lanes 
+and shadows under differnt lighting. I could sanity check that the lane positions don't move too much horizontally, e.g.
+setting a threshold on the `offset`.

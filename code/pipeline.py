@@ -14,6 +14,9 @@ def init_lines():
     right_line = Line() 
     current_frame = 0
     objpoints, imgpoints = prepare_obj_img_points()
+    
+def get_lines():
+    return left_line, right_line
 
 def draw_lane(binary_warped, img, undistorted, left_fitx, right_fitx, ploty):
     # Create an image to draw the lines on
@@ -65,7 +68,7 @@ def undistorted_and_binary_warped(img):
 
 curverad_diff_threshold = 800
 lane_distance_threshold = 700
-coefficient_2d_diff_threshold = 0.0001
+coefficient_2d_diff_threshold = 0.001
 def sanity_check_and_set_params(img_shape, leftx, lefty, rightx, righty, left_fitx, right_fitx, ploty, left_fit, right_fit):
     left_curverad = measure_curvature_real_with_pixels(img_shape[1], img_shape[0], leftx, lefty)
     left_offset = measure_offset_real(img_shape[1], leftx)
@@ -76,16 +79,19 @@ def sanity_check_and_set_params(img_shape, leftx, lefty, rightx, righty, left_fi
     # Check the lanes have similar curvature
     curverad_diff = np.absolute(left_curverad - right_curverad)
     if curverad_diff > curverad_diff_threshold:
+        print('curverad_diff', curverad_diff)
         return False
     
     # Check the lanes are separated by approximately the right distance horizontally
     lane_distance = np.absolute(np.average(leftx) - np.average(rightx))
     if lane_distance > lane_distance_threshold:
+        print('lane_distance', lane_distance)
         return False
     
     # Check the lanes are roughly in parallel
     coefficient_2d_diff = np.absolute(left_fit[0] - right_fit[0])
     if coefficient_2d_diff > coefficient_2d_diff_threshold:
+        print('coefficient_2d_diff', coefficient_2d_diff)
         return False
     
     left_line.set_params(left_fit, left_curverad, left_offset, left_fitx, current_frame)
