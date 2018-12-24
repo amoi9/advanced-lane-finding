@@ -152,3 +152,5 @@ My pipeline doesn't handle the first frame failure case well, which can be impro
 I tried the pipeline in the `challenge_video.mp4`, it seems not working well when there are marks in between the lanes 
 and shadows under differnt lighting. I could sanity check that the lane positions don't move too much horizontally, e.g.
 setting a threshold on the `offset`.
+
+The thresholds for sanity checks aren't tested across videos.
