@@ -6,22 +6,21 @@ import glob
 
 ROWS = 6
 COLS = 9
+
 def prepare_obj_img_points():
-    objpoints = []
-    imgpoints = []
+    objpts = []
+    imgpts = []
     objp = np.zeros((ROWS * COLS, 3), np.float32)
     objp[:, :2] = np.mgrid[0:COLS, 0:ROWS].T.reshape(-1, 2)
-    
     images = glob.glob('camera_cal/calibration*.jpg')
     for fname in images:
         img = mpimg.imread(fname)
         gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         ret, corners = cv2.findChessboardCorners(gray, (COLS, ROWS), None)
         if ret == True:
-            imgpoints.append(corners)
-            objpoints.append(objp)
-            
-    return (objpoints, imgpoints)
+            imgpts.append(corners)
+            objpts.append(objp)
+    return (objpts, imgpts)
 
 def cal_undistort(img, objpoints, imgpoints):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

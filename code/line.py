@@ -40,5 +40,5 @@ class Line():
         self.recent_xfitted = np.append(self.recent_xfitted, np.array([allx]), axis=0)
         self.bestx = np.average(self.recent_xfitted, axis=0)
         if len(self.recent_xfitted) > self.last_n:
-            self.recent_xfitted.pop(0)
+            np.delete(self.recent_xfitted, 0)
         
