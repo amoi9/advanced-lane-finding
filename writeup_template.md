@@ -1,53 +1,32 @@
-## Writeup Template
 
-### You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
----
-
-**Advanced Lane Finding Project**
-
-The goals / steps of this project are the following:
-
-* Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
-* Apply a distortion correction to raw images.
-* Use color transforms, gradients, etc., to create a thresholded binary image.
-* Apply a perspective transform to rectify binary image ("birds-eye view").
-* Detect lane pixels and fit to find the lane boundary.
-* Determine the curvature of the lane and vehicle position with respect to center.
-* Warp the detected lane boundaries back onto the original image.
-* Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
 [//]: # (Image References)
 
-[image1]: ./examples/undistort_output.png "Undistorted"
+[image1]: ./output_images/undistorted_vs_original.png "Undistorted vs original"
 [image2]: ./test_images/test1.jpg "Road Transformed"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
+[image3]: ./output_images/color_gradient_threshed.png "Binary Example"
+[image4]: ./output_images/warped.png "Warp Example"
+[image5]: ./output_images/poly_fit_lanes.png "Fit Visual"
+[image6]: ./output_images/marked_output.png "Output"
 [video1]: ./project_video.mp4 "Video"
+[undistorted]: ./output_images/test1_undist.png "Undistorted test image"
+  
 
-## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
+## Camera Calibration
 
-### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
+The code for this step is contained in the file called `code/undistort.py`. 
 
----
+In the first code cell of `advanced.ipynb` I invoked method `prepare_obj_img_points` from the imported file. This 
+prepares "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here 
+I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each 
+calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy 
+of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the 
+(x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
 
-### Writeup / README
-
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  [Here](https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/writeup_template.md) is a template writeup for this project you can use as a guide and a starting point.  
-
-You're reading it!
-
-### Camera Calibration
-
-#### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
-
-The code for this step is contained in the first code cell of the IPython notebook located in "./examples/example.ipynb" (or in lines # through # of the file called `some_file.py`).  
-
-I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
-
-I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result: 
+In the third code cell of `advanced.ipynb` I invoked the `cal_undistort` method. This used the output `objpoints` and 
+`imgpoints` to compute the camera calibration and distortion coefficients using 
+the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` 
+function and obtained this result: 
 
 ![alt text][image1]
 
@@ -58,22 +37,31 @@ I then used the output `objpoints` and `imgpoints` to compute the camera calibra
 To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
 ![alt text][image2]
 
+In the second code cell in `advanced.ipynb` I invoked the `cal_undistort` method from `code/undistort.py` to get a 
+distortion-corrected image:
+![alt text][undistorted]
+
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
-
+I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines 5 through 
+46 in `code/color_and_gradient_threshed.py`). Code to generate the output is in the 4th cell of `advanced.ipynb`. Here's an 
+example of my output for this step.
 ![alt text][image3]
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+The code for my perspective transform includes a function called `warper()`, which appears in lines 4 through 10 in the 
+file `code/perspective_transform.py`.  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) 
+and destination (`dst`) points. 
+
+I chose the hardcode the source and destination points in the following manner:
 
 ```python
 src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
+    [[(img_size[0] / 2) - 45, img_size[1] / 2 + 100],
+    [((img_size[0] / 6)), img_size[1]],
+    [(img_size[0] * 5 / 6) + 130, img_size[1]],
+    [(img_size[0] / 2 + 95), img_size[1] / 2 + 100]])
 dst = np.float32(
     [[(img_size[0] / 4), 0],
     [(img_size[0] / 4), img_size[1]],
@@ -85,28 +73,37 @@ This resulted in the following source and destination points:
 
 | Source        | Destination   | 
 |:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
+| 595, 460      | 320, 0        | 
+| 213.3, 720      | 320, 720      |
+| 1196.7, 720     | 960, 720      |
+| 735, 460      | 960, 0        |
 
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
+I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image 
+and its warped counterpart to verify that the lines appear parallel in the warped image. (Code to generate image in the 5th code cell)
 
 ![alt text][image4]
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+In the 6th and 8th code cell of the notebook for a test image (`test_images/test3.jpg`), I run the steps:
+  1. Undistort the image
+  2. Run color and gradients transforms to get a binary image
+  3. Apply perspective transform on the binary image to get a warped output
+  4. Find lane pixels from the binary warp image (using the `find_lane_pixels` method from `code/lane_pixel_finder.py`)
+  5. Fit the lane lines with a 2nd order polynomial (using the `fit_polynomial` method from `code/fit_polynomial.py`)
+ 
+The output is like this:
 
 ![alt text][image5]
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+I did this in lines 8 through 42 in `code/curvature_and_offset.py`. 
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+I implemented this step in the 10th code cell of `advanced.ipynb`. 
+Here is an example of my result on a test image:
 
 ![alt text][image6]
 
@@ -116,7 +113,7 @@ I implemented this step in lines # through # in my code in `yet_another_file.py`
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./project_video_output.mp4)
 
 ---
 
