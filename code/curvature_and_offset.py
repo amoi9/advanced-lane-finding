@@ -17,10 +17,8 @@ def measure_curvature_and_offset_real(binary_warped, direction='left'):
     else:
         x = rightx
         y = righty
-    curature = measure_curvature_real_with_pixels(binary_warped.shape[1], binary_warped.shape[0], x, y, direction)
-    
-    offset_pix = (leftx[0] + rightx[0]) / 2 - binary_warped_width / 2
-    offset = offset_pix * xm_per_pix
+    curature = measure_curvature_real_with_pixels(binary_warped.shape[1], binary_warped.shape[0], x, y)
+    offset = measure_offset_real(binary_warped.shape[1], x)
     return curature, offset
 
 def measure_curvature_real_with_pixels(binary_warped_width, binary_warped_length, x, y):
