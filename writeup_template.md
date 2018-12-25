@@ -92,6 +92,21 @@ In the 6th and 8th code cell of the notebook for a test image (`test_images/test
   4. Find lane pixels from the binary warp image (using the sliding window appraoch, the `find_lane_pixels` method from 
   `code/lane_pixel_finder.py`)
   5. Fit the lane lines with a 2nd order polynomial (using the `fit_polynomial` method from `code/fit_polynomial.py`)
+  
+The steps of the sliding window appraoch to detect the lane pixels and prepare the pixels to fit a polynomial are as the following:
+1. Take a histogram of the bottom half of the image
+2. Find the peak of the left and right halves of the histogram, which will be the starting point for the left and right lines
+3. Set up paramters of the slidng windows, e.g. number of windows, width of the window margin, minimum number of pixels found
+in the window, height of the window, .
+4. Loop through each window, and do this: 
+   1. find the boundaries of our current window
+   2. identify the nonzero pixels in x and y within the window
+   3. append these indices to the lists
+   4. if found > minpix pixels from the previous step, recenter next window based on the mean position of these pixels
+5. Concatenate the arrays of indices
+6. Extract left and right line pixel positions
+
+Then use `np.polyfit` to fit polynomials, and generate x and y values for plotting.
  
 The output is like this:
 
