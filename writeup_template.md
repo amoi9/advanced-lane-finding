@@ -114,7 +114,28 @@ The output is like this:
 
 ### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines 8 through 42 in `code/curvature_and_offset.py`. 
+I did this in lines 8 through 32 in `code/curvature_and_offset.py`. 
+
+`measure_curvature_real_with_pixels` is for the curvature calculation, I fit a second order polynomial of the detected
+lane using `np.polyfit`, then use the "Radius of Curvature" formula from the the "Measuring Curvature I" lesson.
+
+For the offset calculation I did the following:
+* Assume that the vehicle's position is in the middle of the image.
+* Find the center of the lane from the fitted polynomials.
+* Find the difference between vehicle position and lane center.
+
+I used the polynomial output from the curvature calculation, which already counted the conversion from pixels to meters.
+So in the code below I only convert when needed but not everywhere: 
+```
+def measure_offset_real(img_shape, left_fit, right_fit):
+    y = ym_per_pix * img_shape[0]
+    l_fitValue = left_fit[0]* y**2 + left_fit[1]*y + left_fit[2]
+    r_fit_Value = right_fit[0]*y**2 + right_fit[1]*y + right_fit[2]
+    lane_center_pos = (l_fitValue + r_fit_Value) /2
+    
+    return lane_center_pos - img_shape[1] / 2 * xm_per_pix
+``` 
+
 
 ### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
