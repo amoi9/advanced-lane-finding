@@ -92,7 +92,8 @@ In the 6th and 8th code cell of the notebook for a test image (`test_images/test
   4. Find lane pixels from the binary warp image (using the sliding window appraoch, the `find_lane_pixels` method from 
   `code/lane_pixel_finder.py`)
   5. Fit the lane lines with a 2nd order polynomial (using the `fit_polynomial` method from `code/fit_polynomial.py`)
-  
+
+EDIT:
 The steps of the sliding window appraoch to detect the lane pixels and prepare the pixels to fit a polynomial are as the following:
 1. Take a histogram of the bottom half of the image
 2. Find the peak of the left and right halves of the histogram, which will be the starting point for the left and right lines
@@ -116,6 +117,7 @@ The output is like this:
 
 I did this in lines 8 through 32 in `code/curvature_and_offset.py`. 
 
+EDIT:
 `measure_curvature_real_with_pixels` is for the curvature calculation, I fit a second order polynomial of the detected
 lane using `np.polyfit`, then use the "Radius of Curvature" formula from the the "Measuring Curvature I" lesson.
 
@@ -190,3 +192,13 @@ and shadows under differnt lighting. I could sanity check that the lane position
 setting a threshold on the `offset`.
 
 The thresholds for sanity checks aren't tested across videos.
+
+EDIT:
+I was already discarding frames which didn't pass sanity checks:
+* Lanes have similar curvature, the thresold I set is 2000(m) difference between the left and right lanes. 
+* Lanes are separated by approximately the right distance horizontally, the distance is in pixels, so I set the threshold
+to be 700 instead of 3.7(m).
+* Roughly in parallel, by checking coefficient of the second order polynomial difference. 
+
+I added sanity check for `offset` and discard when the value is out of range,put the radius of curvature and offset 
+into the output, and updated the output video.

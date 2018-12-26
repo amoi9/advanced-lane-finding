@@ -18,7 +18,7 @@ def init_lines():
 def get_lines():
     return left_line, right_line
 
-def draw_lane(binary_warped, img, undistorted, left_fitx, right_fitx, ploty):
+def draw_lane(binary_warped, img, undistorted, left_fitx, right_fitx, ploty, curverad, offset):
     # Create an image to draw the lines on
     warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
     color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
@@ -47,6 +47,20 @@ def draw_lane(binary_warped, img, undistorted, left_fitx, right_fitx, ploty):
     newwarp = cv2.warpPerspective(color_warp, Minv, (img.shape[1], img.shape[0])) 
     # Combine the result with the original image
     result = cv2.addWeighted(undistorted, 1, newwarp, 0.3, 0)
+    if offset >= 0:
+        direction = 'right'
+    else:
+        direction = 'left'
+
+    font                   = cv2.FONT_HERSHEY_COMPLEX_SMALL
+    fontScale              = 2
+    fontColor              = (255,255,255)
+    lineType               = 2
+    radius_text = "Radius of curvature = %.0f(m)" % curverad
+    cv2.putText(result, radius_text, (100, 50), font, fontScale, fontColor, lineType)
+    offset_text = "Vehicle is %.2fm %s of center" % (np.absolute(offset), direction)
+    cv2.putText(result, offset_text, (100, 90), font, fontScale, fontColor, lineType)
+
     return result
 
 def undistorted_and_binary_warped(img):
@@ -66,37 +80,40 @@ def undistorted_and_binary_warped(img):
     binary_warped = warper(binary_img, src, dst)
     return undistorted, binary_warped
 
-curverad_diff_threshold = 800
+curverad_diff_threshold = 2000
 lane_distance_threshold = 700
 coefficient_2d_diff_threshold = 0.001
+offset_threshold = 0.3
 def sanity_check_and_set_params(img_shape, leftx, lefty, rightx, righty, left_fitx, right_fitx, ploty, left_fit, right_fit):
-    left_curverad = measure_curvature_real_with_pixels(img_shape[1], img_shape[0], leftx, lefty)
-    left_offset = measure_offset_real(img_shape[1], leftx)
-    
-    right_curverad = measure_curvature_real_with_pixels(img_shape[1], img_shape[0], rightx, righty)
-    right_offset = measure_offset_real(img_shape[1], rightx)
+    left_curverad, left_fit_cr = measure_curvature_real_with_pixels(img_shape, leftx, lefty)
+    right_curverad, right_fit_cr = measure_curvature_real_with_pixels(img_shape, rightx, righty)
+    offset = measure_offset_real(img_shape, left_fit_cr, right_fit_cr)
     
     # Check the lanes have similar curvature
     curverad_diff = np.absolute(left_curverad - right_curverad)
     if curverad_diff > curverad_diff_threshold:
         print('curverad_diff', curverad_diff)
-        return False
+        return False, None, None
     
     # Check the lanes are separated by approximately the right distance horizontally
     lane_distance = np.absolute(np.average(leftx) - np.average(rightx))
     if lane_distance > lane_distance_threshold:
         print('lane_distance', lane_distance)
-        return False
+        return False, None, None
     
     # Check the lanes are roughly in parallel
     coefficient_2d_diff = np.absolute(left_fit[0] - right_fit[0])
     if coefficient_2d_diff > coefficient_2d_diff_threshold:
         print('coefficient_2d_diff', coefficient_2d_diff)
-        return False
+        return False, None, None
     
-    left_line.set_params(left_fit, left_curverad, left_offset, left_fitx, current_frame)
-    right_line.set_params(right_fit, right_curverad, right_offset, right_fitx, current_frame)
-    return True
+    if np.absolute(offset) > offset_threshold:
+        print('offset', offset)
+        return False, None, None
+    
+    left_line.set_params(left_fit, left_curverad, offset, left_fitx, current_frame)
+    right_line.set_params(right_fit, right_curverad, offset, right_fitx, current_frame)
+    return True, (left_curverad + right_curverad) / 2, offset
 
 def init_process(img):
     undistorted, binary_warped = undistorted_and_binary_warped(img)
@@ -104,8 +121,10 @@ def init_process(img):
     leftx, lefty, rightx, righty, out_img = find_lane_pixels(binary_warped)
     
     left_fitx, right_fitx, ploty, left_fit, right_fit = fit_polynomial(binary_warped.shape, leftx, lefty, rightx, righty)
-    sanity_check_and_set_params(binary_warped.shape, leftx, lefty, rightx, righty, left_fitx, right_fitx, ploty, left_fit, right_fit)
-    return draw_lane(binary_warped, img, undistorted, left_fitx, right_fitx, ploty)
+    checked, curverad, offset = sanity_check_and_set_params(binary_warped.shape, leftx, lefty, rightx, righty, left_fitx, right_fitx, ploty, left_fit, right_fit)
+    if checked:
+        return draw_lane(binary_warped, img, undistorted, left_fitx, right_fitx, ploty, curverad, offset)
+    return draw_lane(binary_warped, img, undistorted, left_line.allx, right_line.allx, ploty, left_line.radius_of_curvature, left_line.line_base_pos)
 
 def search_around_previous(img):
     undistorted, binary_warped = undistorted_and_binary_warped(img)
@@ -139,10 +158,10 @@ def search_around_previous(img):
     righty = nonzeroy[right_lane_inds]
     # Fit new polynomials
     left_fitx, right_fitx, ploty, left_fit, right_fit = fit_polynomial(binary_warped.shape, leftx, lefty, rightx, righty)
-    checked = sanity_check_and_set_params(binary_warped.shape, leftx, lefty, rightx, righty, left_fitx, right_fitx, ploty, left_fit, right_fit)
+    checked, curverad, offset = sanity_check_and_set_params(binary_warped.shape, leftx, lefty, rightx, righty, left_fitx, right_fitx, ploty, left_fit, right_fit)
     if checked:
-        return draw_lane(binary_warped, img, undistorted, left_fitx, right_fitx, ploty)
-    return draw_lane(binary_warped, img, undistorted, left_line.allx, right_line.allx, ploty)
+        return draw_lane(binary_warped, img, undistorted, left_fitx, right_fitx, ploty, curverad, offset)
+    return draw_lane(binary_warped, img, undistorted, left_line.allx, right_line.allx, ploty, left_line.radius_of_curvature, left_line.line_base_pos)
     
 def process_image(img):
     global current_frame
